@@ -174,3 +174,5 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
+
+## 遇到pods频繁重启，master节点频繁崩溃的问题，寻找解决办法无果，尝试使用centos
