@@ -222,3 +222,58 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 ```
 kubeadm token create --print-join-command
 ```
+#### 部署dashboard可视化控制面板
+拉取官方部署配置文件
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+```
+配置访问端口
+```
+kubectl edit svc kubernetes-dashboard -n kubernetes-dashboard
+```
+将 type: ClusterIP 改为 type: NodePort 
+查看服务段口
+```
+kubectl get svc -n kubernetes-dashboard
+```
+返回如下
+```
+NAME                        TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)         AGE
+dashboard-metrics-scraper   ClusterIP   10.96.52.116   <none>        8000/TCP        136m
+kubernetes-dashboard        NodePort    10.96.66.135   <none>        443:32460/TCP   136m
+```
+可以通过访问任意集群IP:32460访问dashboard
+#### 创建身份验证令牌
+创建示例用户配置文件并应用
+```
+cat << EOF > dash.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+kubectl apply -f dash.yaml
+```
+获取不记名令牌
+```
+kubectl -n kubernetes-dashboard create token admin-user
+```
+返回令牌
+```
+eyJhbGciOiJSUzI1NiIsImtpZCI6InRSZ0s2b1JlRzZVbk5SY2RrcXRIcGNNQmk3V1FPVlJENlJYbFhHcWJZSEEifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNjc5NDkxOTM0LCJpYXQiOjE2Nzk0ODgzMzQsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJhZG1pbi11c2VyIiwidWlkIjoiYzZkMDlhZTktNTI2MC00Y2UxLTkwY2QtYTdkZTQ4NWY4MDNjIn19LCJuYmYiOjE2Nzk0ODgzMzQsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlcm5ldGVzLWRhc2hib2FyZDphZG1pbi11c2VyIn0.ViNWhVbqRH4EpV5wNgDA813PlN0TetrRjcho6P97x4VLTDcdhA1ZLIQmBm-6Dejn-5P4X0MQlNSFQ_dROZcMA5vcduOMh4c_EdnsvaKGg_GiyKKKHcCwlD0b0rybamGEERjIjbLgDVRWFPnQCHcEC3bipdPGld1SGaBWQjg4zGQ48HtSjgFXpMRwBdJSXFvbOT-442-iNauPLhRnnhY8Wh2HuE-0upMlobZlRCEk0B1TYzylMrq8cvsLTpXtobn2p55_iGu6vslPqJ4dSLpErYyrIDR9c7glnJR_Yb0TDAT4Y5QNLyj-ee3XB-iiy8qbvpC66ekw4EmsKYvxR6jJEg
+```
+使用获取到的令牌登录dashboard
